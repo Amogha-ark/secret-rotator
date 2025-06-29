@@ -1,0 +1,11 @@
+# config/samples/secrets_v1alpha1_secretrotation.yaml
+apiVersion: secrets.github.com/v1alpha1
+kind: SecretRotation
+metadata:
+  labels:
+    app.kubernetes.io/name: secret-rotator
+    app.kubernetes.io/managed-by: kustomize
+  name: secretrotation-sample
+spec:
+  vaultPath: "secret/data/myapp/database"  # Note: KV v2 path includes /data/
+  targetSecret: "myapp-database-secret"
