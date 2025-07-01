@@ -1,0 +1,74 @@
+apiVersion: secrets.github.com/v1alpha1
+kind: SecretRotation
+metadata:
+  name: database-secrets-rotator
+  namespace: production
+spec:
+  # Vault path where the secret is stored
+  vaultPath: "secret/data/production/database"
+  
+  # Target Kubernetes secret to create/update
+  targetSecret: "database-credentials"
+  
+  # Workloads that should be updated when secrets change
+  # This will trigger rolling updates by adding/updating annotations
+  targetWorkloads:
+    # Update a deployment in the same namespace
+    - kind: Deployment
+      name: api-server
+      
+    # Update a statefulset in the same namespace  
+    - kind: StatefulSet
+      name: database-proxy
+      
+    # Update a daemonset across different namespace
+    - kind: DaemonSet
+      name: log-collector
+      namespace: monitoring
+      
+    # Update multiple deployments
+    - kind: Deployment
+      name: worker-service
+      
+    - kind: Deployment 
+      name: background-jobs
+  
+  # Optional: Customize annotation prefix (defaults to "secrets.github.com/")
+  # The full annotation will be: <prefix>secret-checksum
+  annotationPrefix: "database.company.io/"
+
+---
+# Example of how your deployment should look
+# The controller will automatically add annotations to trigger updates
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-server
+  template:
+    metadata:
+      labels:
+        app: api-server
+      # The controller will automatically add/update this annotation:
+      # annotations:
+      #   database.company.io/secret-checksum: "abc123def456"
+    spec:
+      containers:
+      - name: api
+        image: myapp:latest
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: database-credentials
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: database-credentials
+              key: password 

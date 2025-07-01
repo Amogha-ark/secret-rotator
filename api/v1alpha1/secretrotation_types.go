@@ -23,15 +23,33 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// WorkloadReference defines a workload that should be updated when secrets change
+type WorkloadReference struct {
+	// Kind is the workload kind (e.g., Deployment, StatefulSet, DaemonSet)
+	Kind string `json:"kind"`
+	// Name is the name of the workload
+	Name string `json:"name"`
+	// Namespace is the namespace of the workload (optional, defaults to SecretRotation namespace)
+	Namespace string `json:"namespace,omitempty"`
+}
+
 // SecretRotationSpec defines desired state
 type SecretRotationSpec struct {
 	VaultPath    string `json:"vaultPath"`
 	TargetSecret string `json:"targetSecret"`
+	// TargetWorkloads are the workloads that should be updated when the secret changes
+	TargetWorkloads []WorkloadReference `json:"targetWorkloads,omitempty"`
+	// AnnotationPrefix is the prefix for the checksum annotation (defaults to "secrets.github.com/")
+	AnnotationPrefix string `json:"annotationPrefix,omitempty"`
 }
 
 // SecretRotationStatus defines observed state (optional)
 type SecretRotationStatus struct {
 	LastRotation metav1.Time `json:"lastRotation,omitempty"`
+	// SecretChecksum is the checksum of the current secret data
+	SecretChecksum string `json:"secretChecksum,omitempty"`
+	// UpdatedWorkloads tracks which workloads were successfully updated
+	UpdatedWorkloads []string `json:"updatedWorkloads,omitempty"`
 }
 
 //+kubebuilder:object:root=true
